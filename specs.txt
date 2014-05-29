@@ -1,0 +1,33 @@
+﻿Feature:  GET
+    In order : to see the content of a web page
+    as a : shell fan
+    I want to download a web page
+
+Scenario: show the content of a page
+    Given : I entered a fake url option `-url "http://fake"`
+    And : any other option
+    When : I press enter
+    Then : the result should be `<h1>hello</h1>`
+
+Scenario: save the content of a page
+    Given : I entered a fake url option `-url "http://fake"`
+    And : I enter the option `-save` with the value 'fake.txt'
+    When : I press enter
+    Then : a file called `fake.txt` should be created with the content `<h1>hello</h1>`
+    
+Feature:  test
+    In order : to get the download times
+    as a : shell fan
+    I want to test the download times
+    
+Scenario: show donwload(s) time(s)  of a page 
+    Given : I entered a fake url option `-url "http://fake"`
+    And : I enter the option `-times` with the number of downloads to be done example "-times 5"
+    When : I press enter
+    Then : the result should be '1.0 ms', '1.2ms', '2.0 ms', '1.0 ms', '1.0 ms' 
+    
+ Scenario: show the average download time of a page
+    Given : I entered a fake url option `-url "http://fake"`
+    And : I enter the option `-times 5 -avg` if i want the average time of five consecutive downloads
+    When : I press enter
+    Then :  the result should be  '1.2ms / 5 downloads'
