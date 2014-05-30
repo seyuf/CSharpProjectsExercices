@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Net;
+using System.Diagnostics;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -48,6 +49,16 @@ namespace Nurl
 			Nurl goodUrl = new Nurl(new string[]{"get", "-url","http://toto.com","-times"});
 			Assert.AreEqual(goodUrl.GetUrl(),goodUrl.GetUrl());
 		}
+		
+		[Test]
+		public void TestTimes(){
+			Nurl goodUrl = new Nurl(new string[]{"get", "-url","http://toto.com","-times","1"});
+			string[] downloadTime = goodUrl.TestUrlTimes().Split(' ');
+			Assert.AreEqual(downloadTime.Length, (goodUrl.TestUrlTimes().Split(' ')).Length, goodUrl.TestUrlTimes());
+			Console.WriteLine("timeOne: {0}, timeTwo: {1}, \n times: {2}", downloadTime.Length,
+			                  (goodUrl.TestUrlTimes().Split(' ')).Length, 
+			                  (goodUrl.TestUrlTimes()) );
+		}
 	}
 	public class Nurl
 	{
@@ -63,7 +74,7 @@ namespace Nurl
 		{
 			command = commandIn;
 			commandsToExecute = new List<string>();
-			if(!ParseCommand()) Console.WriteLine("error in parsing");
+			if((!ParseCommand()) || (!CheckScenario())) Console.WriteLine("error in parsing");
 			
 		}
 		
@@ -83,6 +94,24 @@ namespace Nurl
 			}
 			return true;
 			
+		}
+		
+		public bool CheckScenario(){
+			string feature = commandsToExecute[0];
+			var capitalizer = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+			testScenario = (capitalizer.ToTitleCase(commandsToExecute[0]))+OptionsToString();
+			if( null != this.GetType().GetMethod((capitalizer.ToTitleCase(commandsToExecute[0]))+OptionsToString() )){
+				return true;
+			}else return false;
+		}
+		
+		public string OptionsToString(){
+			StringBuilder sb = new StringBuilder();
+			var capitalizer = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+			for(int i = 1; i < commandsToExecute.Count; i++){
+				sb.Append(capitalizer.ToTitleCase(commandsToExecute[i].Trim( new Char[] { ' ', '-' } )));
+			}
+			return sb.ToString();
 		}
 		
 		public string GetUrl(){
@@ -116,27 +145,25 @@ namespace Nurl
 			return html;
 		}
 		
-		public void GetUrlSave(){ Console.WriteLine("in save"); }
-		public void TestUrlTimes(){ Console.WriteLine("in save"); }
-		public void TestUrlAvg(){ Console.WriteLine("in save"); }
-		
-		public bool CheckScenario(){
-			string feature = commandsToExecute[0];
-			var capitalizer = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
-			testScenario = (capitalizer.ToTitleCase(commandsToExecute[0]))+OptionsToString();
-			if( null != this.GetType().GetMethod((capitalizer.ToTitleCase(commandsToExecute[0]))+OptionsToString() )){
-				return true;
-			}else return false;
+		public void GetUrlSave(){
+			Console.WriteLine("in save");
 		}
-		
-		public string OptionsToString(){
+		public string TestUrlTimes(){
+			int urlIndex = Array.IndexOf(command, "-times");
+			int times = Convert.ToInt32( command[urlIndex+1] );
 			StringBuilder sb = new StringBuilder();
-			var capitalizer = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
-			for(int i = 1; i < commandsToExecute.Count; i++){
-				sb.Append(capitalizer.ToTitleCase(commandsToExecute[i].Trim( new Char[] { ' ', '-' } )));
+			
+			for(int i = 0; i < times; i++){
+				Stopwatch downloadTime = new Stopwatch();
+				downloadTime.Start();
+				StringBuilder sbHtml = new StringBuilder(GetUrl());
+				downloadTime.Stop();
+				sb.Append(" "+downloadTime.ElapsedMilliseconds+"ms");
 			}
 			return sb.ToString();
 		}
+		
+		public void TestUrlAvg(){ Console.WriteLine("in save"); }
 		
 		public static void Main(string[] args)
 		{
