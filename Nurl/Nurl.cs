@@ -29,19 +29,23 @@ namespace Nurl
 		[Test]
 		public void CanBePArsed(){
 			Nurl badUrl  = new Nurl(new string[]{"test", "get", "-save", "-times"});
-			Nurl goodUrl = new Nurl(new string[]{"get", "-url","http://toto.com","-times"});
-			
+			Nurl missingArgForOption = new Nurl(new string[]{"get", "-url","http://toto.com","-times"});
+			Nurl goodUrl = new Nurl(new string[]{"get", "-url","http://toto.com","-times","3"});
 			Assert.AreEqual(false, badUrl.ParseCommand());
 			Assert.AreEqual(true, goodUrl.ParseCommand());
+			Assert.AreEqual(false, missingArgForOption.ParseCommand());
 		}
 		
 		[Test]
 		public void IsScenario(){
 			Nurl badScenario  = new Nurl(new string[]{"test", "get", "-save", "-times"});
-			Nurl goodScenario = new Nurl(new string[]{"test", "-url", "http://toto.com","-times"});
-			goodScenario.CheckScenario();
+			Nurl saveScenario  = new Nurl(new string[]{ "get", "-url", "http://toto.com", "-save", "toto.txt"});
+			Nurl timeScenario = new Nurl(new string[]{"test", "-url", "http://toto.com","-times"});
+			Nurl timeAvgScenario = new Nurl(new string[]{"test", "-url", "http://toto.com","-times", "5", "-avg"});
 			Assert.AreEqual(false, badScenario.CheckScenario());
-			Assert.AreEqual(true, goodScenario.CheckScenario(), goodScenario.testScenario);
+			Assert.AreEqual(true, saveScenario.CheckScenario());
+			Assert.AreEqual(true, timeScenario.CheckScenario());
+			Assert.AreEqual(true, timeAvgScenario.CheckScenario());
 		}
 		
 		[Test]
@@ -56,7 +60,7 @@ namespace Nurl
 			string[] downloadTime = goodUrl.TestUrlTimes().Split(' ');
 			Assert.AreEqual(downloadTime.Length, (goodUrl.TestUrlTimes().Split(' ')).Length, goodUrl.TestUrlTimes());
 			Console.WriteLine("timeOne: {0}, timeTwo: {1}, \n times: {2}", downloadTime.Length,
-			                  (goodUrl.TestUrlTimes().Split(' ')).Length, 
+			                  (goodUrl.TestUrlTimes().Split(' ')).Length,
 			                  (goodUrl.TestUrlTimes()) );
 		}
 	}
@@ -83,8 +87,8 @@ namespace Nurl
 			{
 				commandsToExecute.Add(command[0]);
 			}else return false;
-			
-			for(int i = 1; i < command.Length; i+=2){
+			int i = 0;
+			for(i = 1; i < command.Length; i+=2){
 				if(-1 != Array.IndexOf(options, (command[i].ToLower())))
 				{
 					commandsToExecute.Add(command[i].ToLower());
@@ -92,7 +96,13 @@ namespace Nurl
 				}
 				return false;
 			}
-			return true;
+			try{
+				string last = command[i - 1];
+				return true;
+			}catch(Exception ex){
+				Console.WriteLine("error in parsing"+ex.Message);
+				return false;
+			}
 			
 		}
 		
@@ -163,7 +173,7 @@ namespace Nurl
 			return sb.ToString();
 		}
 		
-		public void TestUrlAvg(){ Console.WriteLine("in save"); }
+		public void TestUrlTimesAvg(){ Console.WriteLine("in save"); }
 		
 		public static void Main(string[] args)
 		{
@@ -173,140 +183,3 @@ namespace Nurl
 	}
 }
 
-
-
-
-
-
-
-
-
-/*
-class MainClass
-    {
-        public static void Main (string[] args)
-        {
-            var users = new Users ();
-            It ("should add users", TestExpression (() => {
-                users.Add (new User{ Id = "456", Name = "Toto" });
-                users.Add (new User{ Id = "1234", Name = "TAta" });
-                users.Add (new User{ Id = "123", Name = "Tati" });
-            }));
-
-            It ("should get list of users",
-                users.GetAll ().Count () == 3);
-
-            It ("sould sort by name", TestExpression (() => {
-                var expected = "Tata";
-                var actual = users
-                    .GetAll ("Name")
-                    .FirstOrDefault ()
-                    .Name;
-
-                if (actual != expected)
-                    throw new Exception ("not equal");
-            }));
-            It ("sould sort by id", TestExpression (() => {
-                var expected = "123";
-                var actual = users
-                    .GetAll ("Id")
-                    .FirstOrDefault ()
-                    .Id;
-
-                if (actual != expected)
-                    throw new Exception ("not equal");
-            }));
-
-            It ("should sort by id lambda", TestExpression (() => {
-                var expected = "123";
-                var actual = users
-                    .GetAll (x => x.Id.ToUpper ())
-                    .FirstOrDefault ()
-                    .Id;
-
-                if (actual != expected)
-                    throw new Exception ("not equal");
-            }));
-            Console.Read ();
-        }
-
-        static Func<Action,bool> TestExpression = exp => {
-            try {
-                exp ();
-                return true;
-            } catch (Exception ex) {
-                Console.WriteLine (ex.Message);
-                return false;
-            }
-        };
-        static Action<string,bool> It =
-            (s, b) =>
-            Console.WriteLine (
-                (b ? "Coche épaisse︎" : "✘") + " It " + s);
-    }
-
-    public class User
-    {
-        public string Id {
-            get;
-            set;
-        }
-
-        public string Name {
-            get;
-            set;
-        }
-    }
-
-    public class Users
-    {
-        private List<User> users = new List<User> ();
-
-        public void Add (User user)
-        {
-            users.Add (user);
-        }
-
-        public IEnumerable<User> GetAll ()
-        {
-            return users;
-        }
-
-        public IEnumerable<User> GetAll (string name)
-        {
-            return getAllVersionReflection (name);
-        }
-
-        public IEnumerable<User> GetAll<T> (Func<User,T> sorter)
-        {
-            return getAllVersionLambda (sorter);
-        }
-
-        private IEnumerable<User> getAllVersionLambda<T> (
-            Func<User,T> sorter)
-        {
-            return users.OrderBy (sorter);
-        }
-
-        private IEnumerable<User> getAllVersionReflection(string name)
-        {
-            Type userType = typeof(User);
-            PropertyInfo property = userType.GetProperty (name);
-
-            Func<User,object> sortBy =
-                (u) => property.GetValue (u, null);
-
-            return users.OrderBy (sortBy);
-        }
-
-        private IEnumerable<User> getAllVersionSwitch (string name)
-        {
-            if (name == "Name")
-                return users.OrderBy (x => x.Name);
-
-            if (name == "Id")
-                return users.OrderBy (x => x.Id);
-            return users;
-        }
-    }
- */
