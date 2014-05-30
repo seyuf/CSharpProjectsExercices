@@ -26,18 +26,27 @@ namespace Nurl
 		}
 		
 		[Test]
-		public void TestIfCommands(){
+		public void CanBePArsed(){
 			Nurl badUrl  = new Nurl(new string[]{"test", "get", "-save", "-times"});
 			Nurl goodUrl = new Nurl(new string[]{"get", "-url","http://toto.com","-times"});
 			
-			Assert.AreEqual(false, badUrl.parseCommand());
-			Assert.AreEqual(true, goodUrl.parseCommand());
+			Assert.AreEqual(false, badUrl.ParseCommand());
+			Assert.AreEqual(true, goodUrl.ParseCommand());
+		}
+		
+		[Test]
+		public void IsScenario(){
+			Nurl badScenario  = new Nurl(new string[]{"test", "get", "-save", "-times"});
+			Nurl goodScenario = new Nurl(new string[]{"test", "-url", "http://toto.com","-times"});
+			goodScenario.CheckScenario();
+			Assert.AreEqual(false, badScenario.CheckScenario());
+			Assert.AreEqual(true, goodScenario.CheckScenario(), goodScenario.testScenario);
 		}
 		
 		[Test]
 		public void TestGetHtml(){
 			Nurl goodUrl = new Nurl(new string[]{"get", "-url","http://toto.com","-times"});
-			Assert.AreEqual(goodUrl.getUrl(),goodUrl.getUrl());
+			Assert.AreEqual(goodUrl.GetUrl(),goodUrl.GetUrl());
 		}
 	}
 	public class Nurl
@@ -48,15 +57,17 @@ namespace Nurl
 		HttpWebRequest myHttpWebRequest;
 		HttpWebResponse myHttpWebResponse;
 		public List<string> commandsToExecute;
+		public string testScenario;
+		
 		public Nurl( string[] commandIn)
 		{
 			command = commandIn;
 			commandsToExecute = new List<string>();
-			if(!parseCommand()) Console.WriteLine("error in parsing");
+			if(!ParseCommand()) Console.WriteLine("error in parsing");
 			
 		}
 		
-		public bool parseCommand(){
+		public bool ParseCommand(){
 			if(-1 != Array.IndexOf(features, command[0]))
 			{
 				commandsToExecute.Add(command[0]);
@@ -66,7 +77,6 @@ namespace Nurl
 				if(-1 != Array.IndexOf(options, (command[i].ToLower())))
 				{
 					commandsToExecute.Add(command[i].ToLower());
-
 					continue;
 				}
 				return false;
@@ -75,7 +85,7 @@ namespace Nurl
 			
 		}
 		
-		public string getUrl(){
+		public string GetUrl(){
 			string feature = commandsToExecute[0];
 			StringBuilder sb = new StringBuilder();
 			Byte[] buf = new byte[8192];
@@ -83,9 +93,13 @@ namespace Nurl
 			int count = 0;
 			if( (( feature).Equals("get")) && (commandsToExecute.Contains("-url")))
 			{
-				int urlIndex = Array.IndexOf(command, "-url");
-				myHttpWebRequest=(HttpWebRequest)WebRequest.Create(command[urlIndex+1]);
-				myHttpWebResponse=(HttpWebResponse)myHttpWebRequest.GetResponse();
+				try{
+					int urlIndex = Array.IndexOf(command, "-url");
+					myHttpWebRequest=(HttpWebRequest)WebRequest.Create(command[urlIndex+1]);
+					myHttpWebResponse=(HttpWebResponse)myHttpWebRequest.GetResponse();
+				}catch(Exception ex){
+					return "issue with the requested url"+ex.Message;
+				}
 			}
 			
 			resStream = myHttpWebResponse.GetResponseStream();
@@ -102,7 +116,27 @@ namespace Nurl
 			return html;
 		}
 		
+		public void GetUrlSave(){ Console.WriteLine("in save"); }
+		public void TestUrlTimes(){ Console.WriteLine("in save"); }
+		public void TestUrlAvg(){ Console.WriteLine("in save"); }
 		
+		public bool CheckScenario(){
+			string feature = commandsToExecute[0];
+			var capitalizer = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+			testScenario = (capitalizer.ToTitleCase(commandsToExecute[0]))+OptionsToString();
+			if( null != this.GetType().GetMethod((capitalizer.ToTitleCase(commandsToExecute[0]))+OptionsToString() )){
+				return true;
+			}else return false;
+		}
+		
+		public string OptionsToString(){
+			StringBuilder sb = new StringBuilder();
+			var capitalizer = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+			for(int i = 1; i < commandsToExecute.Count; i++){
+				sb.Append(capitalizer.ToTitleCase(commandsToExecute[i].Trim( new Char[] { ' ', '-' } )));
+			}
+			return sb.ToString();
+		}
 		
 		public static void Main(string[] args)
 		{
@@ -111,3 +145,141 @@ namespace Nurl
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+/*
+class MainClass
+    {
+        public static void Main (string[] args)
+        {
+            var users = new Users ();
+            It ("should add users", TestExpression (() => {
+                users.Add (new User{ Id = "456", Name = "Toto" });
+                users.Add (new User{ Id = "1234", Name = "TAta" });
+                users.Add (new User{ Id = "123", Name = "Tati" });
+            }));
+
+            It ("should get list of users",
+                users.GetAll ().Count () == 3);
+
+            It ("sould sort by name", TestExpression (() => {
+                var expected = "Tata";
+                var actual = users
+                    .GetAll ("Name")
+                    .FirstOrDefault ()
+                    .Name;
+
+                if (actual != expected)
+                    throw new Exception ("not equal");
+            }));
+            It ("sould sort by id", TestExpression (() => {
+                var expected = "123";
+                var actual = users
+                    .GetAll ("Id")
+                    .FirstOrDefault ()
+                    .Id;
+
+                if (actual != expected)
+                    throw new Exception ("not equal");
+            }));
+
+            It ("should sort by id lambda", TestExpression (() => {
+                var expected = "123";
+                var actual = users
+                    .GetAll (x => x.Id.ToUpper ())
+                    .FirstOrDefault ()
+                    .Id;
+
+                if (actual != expected)
+                    throw new Exception ("not equal");
+            }));
+            Console.Read ();
+        }
+
+        static Func<Action,bool> TestExpression = exp => {
+            try {
+                exp ();
+                return true;
+            } catch (Exception ex) {
+                Console.WriteLine (ex.Message);
+                return false;
+            }
+        };
+        static Action<string,bool> It =
+            (s, b) =>
+            Console.WriteLine (
+                (b ? "Coche épaisse︎" : "✘") + " It " + s);
+    }
+
+    public class User
+    {
+        public string Id {
+            get;
+            set;
+        }
+
+        public string Name {
+            get;
+            set;
+        }
+    }
+
+    public class Users
+    {
+        private List<User> users = new List<User> ();
+
+        public void Add (User user)
+        {
+            users.Add (user);
+        }
+
+        public IEnumerable<User> GetAll ()
+        {
+            return users;
+        }
+
+        public IEnumerable<User> GetAll (string name)
+        {
+            return getAllVersionReflection (name);
+        }
+
+        public IEnumerable<User> GetAll<T> (Func<User,T> sorter)
+        {
+            return getAllVersionLambda (sorter);
+        }
+
+        private IEnumerable<User> getAllVersionLambda<T> (
+            Func<User,T> sorter)
+        {
+            return users.OrderBy (sorter);
+        }
+
+        private IEnumerable<User> getAllVersionReflection(string name)
+        {
+            Type userType = typeof(User);
+            PropertyInfo property = userType.GetProperty (name);
+
+            Func<User,object> sortBy =
+                (u) => property.GetValue (u, null);
+
+            return users.OrderBy (sortBy);
+        }
+
+        private IEnumerable<User> getAllVersionSwitch (string name)
+        {
+            if (name == "Name")
+                return users.OrderBy (x => x.Name);
+
+            if (name == "Id")
+                return users.OrderBy (x => x.Id);
+            return users;
+        }
+    }
+ */
